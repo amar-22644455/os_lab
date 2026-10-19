@@ -1,0 +1,41 @@
+# Question 3: Page-Table Printing
+
+## Objective
+
+Provide a system call that prints the calling process's page-table hierarchy and summarizes its user mappings.
+
+## Implementation
+
+- `vm.c` implements `vmprint`.
+- Present page-directory entries are printed with their page-table physical address and permission flags.
+- User-space page-table entries include virtual address, physical address, and PTE flags.
+- Kernel page-directory entries are counted but their individual PTEs are not dumped.
+- The output identifies the stack guard page and compares the user-page count with `sz / PGSIZE - 1`.
+- `sysproc.c`, `syscall.c`, `syscall.h`, `user.h`, and `usys.S` expose `vmprint` to user space.
+
+## Test
+
+`vmprinttest.c` prints the page table:
+
+1. At process startup.
+2. After growing the address space by eight pages.
+3. After shrinking the address space by one page.
+
+Inspect the summary and `MATCH` check after each dump.
+
+## Build and run
+
+Run from this directory:
+
+```sh
+make
+make qemu-nox
+```
+
+At the xv6 shell:
+
+```text
+vmprinttest
+```
+
+Use `make qemu` for a graphical QEMU session and `make clean` to remove generated files.

@@ -1,0 +1,41 @@
+# Question 2: Memory Accounting
+
+## Objective
+
+Track physical-page usage and expose the accounting through a `getmeminfo` system call.
+
+## Implementation
+
+- `kalloc.c` tracks total pages initialized by the allocator and pages currently on the free list.
+- `meminfo.h` defines the `struct meminfo` returned to user space.
+- `sysproc.c` validates the user pointer and fills in total, free, user-space, and page-table page counts.
+- `vm.c` counts page-table pages as the page directory plus each present page-table page.
+- The system-call declarations and stubs are wired through `syscall.c`, `syscall.h`, `user.h`, and `usys.S`.
+
+## Test
+
+`memtest.c`:
+
+1. Prints memory statistics before and after an eight-page `sbrk`.
+2. Records free pages before `fork`.
+3. Starts a child, then reaps it with `wait`.
+4. Compares free-page counts after reaping to detect a memory leak.
+
+The expected final message is `NO LEAK (equal)` when the allocator correctly reclaims the child's pages.
+
+## Build and run
+
+Run from this directory:
+
+```sh
+make
+make qemu-nox
+```
+
+At the xv6 shell:
+
+```text
+memtest
+```
+
+Use `make qemu` for a graphical QEMU session and `make clean` to remove generated files.
