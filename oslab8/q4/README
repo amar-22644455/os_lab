@@ -1,0 +1,46 @@
+# Question 4: Lazy Allocation
+
+## Objective
+
+Implement lazy allocation for positive `sbrk` requests. Growing the process size reserves virtual address space, while physical pages are allocated only when accessed.
+
+## Implementation
+
+- `sysproc.c` updates `cur->sz` for positive `sbrk` without eagerly calling `growproc`.
+- `vm.c` implements `lazyalloc`, which validates a faulting address, allocates and zeroes one page, and maps it with `PTE_W | PTE_U`.
+- `trap.c` handles `T_PGFLT` and kills a user process when the fault is invalid.
+- `copyuvm` skips absent PTEs so `fork` works with sparse lazy heaps.
+- `deallocuvm` and shrinking `sbrk` release only pages that are actually mapped.
+- `kalloc.c` maintains physical-page counters, and `getmeminfo` reports them through `meminfo.h`.
+
+The guard page remains mapped but has `PTE_U` cleared, so it is not treated as a valid lazy heap page.
+
+## Tests
+
+`lazytest.c`:
+
+1. Grows the heap by 32 MiB and verifies that free memory does not immediately drop by 32 MiB.
+2. Touches three pages and checks that only those pages are faulted in.
+3. Uses `write` on an untouched page to exercise kernel-side user-memory access.
+4. Forks and verifies that the child sees data from a touched page.
+5. Attempts to access `va == sz`; the child should be killed and the parent should remain alive.
+
+The Makefile also includes the `memtest` program, allowing the q2 accounting check to be run against the lazy-allocation implementation.
+
+## Build and run
+
+Run from this directory:
+
+```sh
+make
+make qemu-nox
+```
+
+At the xv6 shell:
+
+```text
+lazytest
+memtest
+```
+
+Use `make qemu` for a graphical QEMU session and `make clean` to remove generated files.

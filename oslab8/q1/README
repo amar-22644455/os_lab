@@ -1,0 +1,39 @@
+# Question 1: Virtual Address to Physical Address
+
+## Objective
+
+Implement and test a `va2pa` system call that translates a user virtual address belonging to the calling process into its physical address.
+
+## Implementation
+
+- `sysproc.c` implements `sys_va2pa`.
+- The handler walks the current process's page table with `walkpgdir`.
+- Translation succeeds only when the PTE is present (`PTE_P`) and user-accessible (`PTE_U`).
+- The physical page address is combined with the original virtual-address offset.
+- Invalid, unmapped, or kernel-only addresses return `-1` and produce a diagnostic message.
+- `syscall.c`, `syscall.h`, `user.h`, and `usys.S` expose the system call to user programs.
+
+## Test
+
+`vatest.c`:
+
+1. Translates a global variable, stack variable, and heap allocation.
+2. Checks that `0x7fffffff` is rejected as unmapped.
+3. Forks and prints the child and parent mappings to demonstrate that copied address spaces can use different physical pages for the same virtual address.
+
+## Build and run
+
+Run from this directory:
+
+```sh
+make
+make qemu-nox
+```
+
+At the xv6 shell:
+
+```text
+vatest
+```
+
+Use `make qemu` for a graphical QEMU session and `make clean` to remove generated files.
