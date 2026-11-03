@@ -392,3 +392,78 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
 //PAGEBREAK!
 // Blank page.
 
+// Extract the physical frame address and combine it with the page offset
+int
+virt2phys(uint va)
+{
+  struct proc *p = myproc();
+  pte_t *pte;
+  uint pa, offset;
+
+  // Protect against kernel space memory reads by the user
+  if(va >= KERNBASE)
+    return -1;
+
+  // Use walkpgdir to locate the corresponding page-table entry
+  pte = walkpgdir(p->pgdir, (const void*)va, 0);
+
+  // Check whether the page-table entry is valid and present (PTE_P)
+  if(pte == 0 || !(*pte & PTE_P) || !(*pte & PTE_U))
+    return -1;
+
+  // Calculate the complete physical address
+  pa = PTE_ADDR(*pte);
+  offset = va & 0xFFF; // 0xFFF extracts the 12-bit page offset
+
+  return pa | offset;
+}
+
+// Displays physical frame number and page-table flags
+int
+get_pageinfo(uint va)
+{
+  struct proc *p = myproc();
+  pte_t *pte;
+
+  if(va >= KERNBASE)
+    return -1;
+
+  pte = walkpgdir(p->pgdir, (const void*)va, 0);
+  if(pte == 0 || !(*pte & PTE_P)){
+    cprintf("Page at VA 0x%x is not mapped.\n", va);
+    return -1;
+  }
+
+  uint pa = PTE_ADDR(*pte);
+  uint frame_num = pa >> 12; // Shift right by 12 bits to get the frame number
+
+  cprintf("VA: 0x%x -> Physical Frame: 0x%x\n", va, frame_num);
+  cprintf("Flags: P:%d W:%d U:%d\n",
+          (*pte & PTE_P) ? 1 : 0,
+          (*pte & PTE_W) ? 1 : 0,
+          (*pte & PTE_U) ? 1 : 0);
+  return 0;
+}
+
+// Removes write permission from the page
+int
+make_readonly(uint va)
+{
+  struct proc *p = myproc();
+  pte_t *pte;
+
+  if(va >= KERNBASE)
+    return -1;
+
+  pte = walkpgdir(p->pgdir, (const void*)va, 0);
+  if(pte == 0 || !(*pte & PTE_P))
+    return -1;
+
+  // Bitwise AND with the bitwise NOT of PTE_W to clear the write bit
+  *pte = *pte & ~PTE_W;
+
+  // Reload CR3 register to flush the Translation Lookaside Buffer (TLB)
+  lcr3(V2P(p->pgdir));
+
+  return 0;
+}

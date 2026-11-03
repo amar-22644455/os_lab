@@ -89,3 +89,39 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int
+sys_memstats(void)
+{
+  print_memstats();
+  return 0;
+}
+
+int
+sys_vtop(void)
+{
+  int va;
+  // Retrieve the virtual address argument passed by the user
+  if(argint(0, &va) < 0)
+    return -1;
+
+  return virt2phys((uint)va);
+}
+
+int
+sys_pageinfo(void)
+{
+  int va;
+  if(argint(0, &va) < 0)
+    return -1;
+  return get_pageinfo((uint)va);
+}
+
+int
+sys_setreadonly(void)
+{
+  int va;
+  if(argint(0, &va) < 0)
+    return -1;
+  return make_readonly((uint)va);
+}

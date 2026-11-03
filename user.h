@@ -23,7 +23,10 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
-
+int memstats(void);
+int vtop(int);
+int pageinfo(int);
+int setreadonly(int);
 // ulib.c
 int stat(const char*, struct stat*);
 char* strcpy(char*, const char*);
